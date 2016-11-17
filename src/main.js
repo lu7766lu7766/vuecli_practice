@@ -4,17 +4,18 @@ import router from './router'
 import store from './store'
 
 /* eslint-disable no-new */
-let vm = new Vue({
+new Vue({
   el: '#app',
   data: {
     show: true,
-    message: 'test123'
+    message: 1
   },
   methods: {
-    chgShow: (e) => {
-      vm.show = !vm.show
-      console.log(vm.show)
-      console.log(e)
+    // chgShow : () =>{} == chgShow : function chgShow(){} error
+    chgShow () { // chgShow:function(){} success
+      // console.log(this)
+      // this.show = !this.show
+      this.message++
     }
   },
   render (h) {
@@ -22,8 +23,9 @@ let vm = new Vue({
       // console.log(this.show)
       return (
         <div>
-          hello, world!
-          <button on-click={this.chgShow}>test</button>
+          hello, world!{this.message}
+          <input type='text' value={this.message}/>
+          <button on-click={this.chgShow.bind(this)}>test</button>
         </div>
       )
     } else {
