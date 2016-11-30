@@ -1,0 +1,11 @@
+{ 
+  "Firebase": {
+    "config":  {
+			"apiKey": "AIzaSyDTiiK4fKCQHGSVZZt_Y173gmOaiwKGUmc",
+			"authDomain": "test-9c3c1.firebaseapp.com",
+			"databaseURL": "https://test-9c3c1.firebaseio.com",
+			"storageBucket": "test-9c3c1.appspot.com",
+			"messagingSenderId": "694160210736"
+		}
+  }
+}
