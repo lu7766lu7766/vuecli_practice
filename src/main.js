@@ -11,6 +11,11 @@ import firebase from 'firebase'
 
 import Cookies from 'js-cookie'
 
+import twRules from '../config/tw_phone_rule'
+
+import _ from 'lodash'
+import $ from 'jquery'
+
 const conf = config.Firebase.config
 
 firebase.initializeApp(conf)
@@ -24,7 +29,19 @@ new Vue({
     message: 1,
     userId: '',
     users: {},
-    login_msg: {}
+    login_msg: {},
+    countryCode: '0',
+    countrySelect: {
+      '0': 'Taiwan',
+      '1': 'China'
+    },
+    twRules,
+    searchNumber: '',
+    limitLen: -1,
+    numberSelectDefault: ['', '?', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+    numberSelectList: [],
+    numberLimitLen: -1,
+    numberLimitLenList: []
   },
   methods: {
     // chgShow : () =>{} == chgShow : function chgShow(){} error
@@ -74,10 +91,71 @@ new Vue({
     logout () {
       Cookies.remove('login_msg')
       this.login_msg = {}
+    },
+    chgCountry () {
+      this.searchNumber = ''
+      this.numberSelectList = []
+      this.checkPhone(0)
+    },
+    setPhone (index, event) {
+      var len = index + 1
+      this.searchNumber = this.searchNumber.substr(0, index)
+      this.numberSelectList = this.numberSelectList.splice(0, len)
+      this.searchNumber += event.target.value
+      this.checkPhone(len)
+    },
+    checkPhone (len) {
+      // 預設國碼開頭
+      if (len === 0) {
+        if (this.countryCode === '0') {
+          this.searchNumber = '0'
+          this.numberSelectList.push(['0'])
+        } else if (this.countryCode === '1') {
+          this.searchNumber = '86'
+          this.numberSelectList.push(['8'])
+          this.numberSelectList.push(['6'])
+        }
+      }
+      var numberCurrent = ['', '?']
+      this.numberLimitLenList = []
+
+      if (this.countryCode === '0') {
+        _.forEach(this.twRules, function (val, key) {
+          if (key.startsWith(this.searchNumber) && key.length >= this.searchNumber.length) {
+            numberCurrent.push(key.substr(this.searchNumber.length, 1))
+            this.numberLimitLenList.push(parseInt(val))
+          }
+        }.bind(this))
+      } else if (this.countryCode === '1') { }
+      // console.log(this.numberLimitLenList)
+
+      // 移除重複
+      numberCurrent = this.removeRepeat(numberCurrent)
+      this.numberLimitLenList = this.removeRepeat(this.numberLimitLenList)
+
+      // 如果沒有match到
+      if (numberCurrent.length === 2) {
+        numberCurrent = _.clone(this.numberSelectDefault)
+      }
+      // 比對到多個長度，取最大值
+      if (this.numberLimitLenList.length > 0) {
+        this.numberLimitLen = _.max(this.numberLimitLenList)
+      }
+      // 如果號碼長度小於最終長度
+      if (this.numberSelectList.length < this.numberLimitLen) {
+        this.numberSelectList.push(numberCurrent)
+        this.$nextTick(function () {
+          $('.numberSelect:last').val('')
+        })
+      }
+    },
+    removeRepeat (list) {
+      return list.filter(function (el, i, arr) {
+        return arr.indexOf(el) === i
+      })
     }
   },
-  computed: {
-  },
+  computed: { },
   template: `
     <div>
       <input type="text" v-model="userId"/>
@@ -86,6 +164,18 @@ new Vue({
       <button @click="get">Get</button>
       <button @click="logout" v-if="login_msg.token">Logout</button>
       {{userId}}
+
+      <div id="searchNumber">
+        <div>
+          {{searchNumber}}-{{numberLimitLen}}
+          <select v-model="countryCode" @change="chgCountry">
+            <option v-for="(country, code) in countrySelect" :value="code">{{country}}</option>
+          </select>
+        </div>
+        <select v-for="(numberSelect, index) in numberSelectList" @change="setPhone(index, $event)" class="numberSelect">
+          <option v-for="s in numberSelect">{{s}}</option>
+        </select>
+      </div>
       <div v-if="show">
         hello, world!{{this.message}}<br>
       </div>
@@ -94,7 +184,7 @@ new Vue({
       </div>
       <input type='text' v-model="message"/><br>
       <button @click="show = !show">test</button>
-      <img id="barcode"/>
+      <img id="barcode" style="width:100px;height:30px"/>
     </div>
   `, // <App />
   mounted () {
@@ -107,6 +197,8 @@ new Vue({
       if (typeof Cookies.get('login_msg') !== 'undefined') {
         this.login_msg = JSON.parse(Cookies.get('login_msg'))
       }
+
+      this.chgCountry(0)
     })
   },
   // render (h) {
